@@ -92,7 +92,7 @@
         "gitScriptFileName": "couchdbdeploy.sh",
         "gitScriptFile": "[concat(variables('gitAssetLocation'),'/',variables('gitScriptFileName'))]",
         "publicIPAddressName" : "couchdbpublic",
-        "publicIPAddressType" : "Dynamic",
+        "publicIPAddressType" : "Static",
         "siteName" : "HospitalRunFrontEnd",
         "hostingPlanName" : "HospitalRunFrontEndHostingPlan",
         "branch": "master",
@@ -331,10 +331,21 @@
         },
         "properties": {
             "WEBSITE_NODE_DEFAULT_VERSION": "6.9.1",
-            "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
+            "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).dnsSettings.domainNameLabel]"
         }
        }
       ]
     }
-  ]
+  ],
+  "outputs": {
+      "PublicIPInfo" : {
+          "type": "string",
+          "value": "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')))]"
+      },
+      "NicInfo" : {
+          "type": "string",
+          "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nicName')))]"
+      }
+
+  }
 }
