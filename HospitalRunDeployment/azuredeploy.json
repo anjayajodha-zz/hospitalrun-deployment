@@ -1,0 +1,333 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "adminUsername": {
+        "type": "string",
+        "metadata": {
+          "description": "Username for the Virtual Machine. Default value is localadmin"
+        },
+        "defaultValue": "localadmin"
+      },
+        "adminPassword": {
+            "type": "securestring",
+            "defaultValue": "[concat('Subscription#',substring(resourcegroup().id,15,36))]",
+            "metadata": {
+                "description": "Password for the Virtual Machine. Default value is 'Subscription#<subscription id>'"
+            }
+        },
+        "sku": {
+            "type": "string",
+            "allowedValues": [
+                "F1",
+                "D1",
+                "B1",
+                "B2",
+                "B3",
+                "S1",
+                "S2",
+                "S3",
+                "P1",
+                "P2",
+                "P3",
+                "P4"
+            ],
+            "defaultValue": "S1",
+            "metadata": {
+                "description": "The pricing tier for the hosting plan."
+            }
+        },
+        "workerSize": {
+            "type": "string",
+            "allowedValues": [
+                "0",
+                "1",
+                "2"
+            ],
+            "defaultValue": "0",
+            "metadata": {
+                "description": "The instance size of the hosting plan (small, medium, or large)."
+            }
+        }
+    },
+    "variables": {
+        "dnsNameForPublicIP": "[tolower(concat('dns', uniquestring(resourceGroup().id)))]",
+        "imagePublisher" : "Canonical",
+        "imageOffer" : "UbuntuServer",
+        "imageSku" : "14.04.3-LTS",
+        "location": "[resourceGroup().location]",
+        "OSDiskName": "osdisk",
+        "nicName": "[tolower(concat('nic',uniquestring(resourceGroup().id)))]",
+        "addressPrefix": "10.0.0.0/24",
+        "subnetName": "[tolower(concat('subnet',uniquestring(resourceGroup().id)))]",
+        "subnetPrefix": "10.0.0.0/24",
+        "storageAccountName": "[concat('sa', uniquestring(resourceGroup().id))]",
+        "storageAccountType": "Standard_LRS",
+        "vmStorageAccountContainerName": "vhds",
+        "vmName": "[substring(concat('simplelinuxvm',resourceGroup().Name),0,14)]",
+        "vmSize": "Standard_A2",
+        "virtualNetworkName": "[tolower(concat('vnet',uniquestring(resourceGroup().id)))]",
+        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+        "networkSecurityGroupName": "[tolower(concat('nsg',uniquestring(resourceGroup().id)))]",
+        "gitAssetLocation": "https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/",
+        "gitScriptFileName": "couchdbdeploy.sh",
+        "gitScriptFile": "[concat(variables('gitAssetLocation'),'/',variables('gitScriptFileName'))]",
+        "publicIPAddressName" : "[concat('couchdbpublic',uniqueString(resourceGroup().id))]",
+        "publicIPAddressType" : "Static",
+        "siteName" : "[concat('hospitalRunFrontEnd',uniqueString(resourceGroup().id))]",
+        "hostingPlanName" : "[concat('hospitalRunHosting',uniqueString(resourceGroup().id))]",
+        "branch": "master",
+        "repoURL": "https://github.com/anjayajodha/hospitalrun-server.git"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[toLower(variables('storageAccountName'))]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[variables('location')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh",
+                        "properties": {
+                            "description": "Allow SSH",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "couchdb",
+                        "properties": {
+                            "description": "Allow CouchDB",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5984",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 201,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsNameForPublicIP')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+                "[variables('networkSecurityGroupName')]"
+            ],
+            "properties": {
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                },
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[variables('vmName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('vmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('imagePublisher')]",
+                        "offer": "[variables('imageOffer')]",
+                        "sku": "[variables('imageSku')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob, variables('vmStorageAccountContainerName'),'/', variables('OSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob)]"
+                    }
+                }
+            }
+    },
+    {
+
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName'),'/LinuxCustomScriptExtension')]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": ["[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]"],
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": "true",
+        "settings": {
+                "fileUris": [ "[variables('gitScriptFile')]" ],
+                "commandToExecute": "sh couchdbdeploy.sh"
+            }
+
+      }
+
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[variables('hostingPlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'),'/extensions/LinuxCustomScriptExtension')]"
+      ],
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": "[parameters('workerSize')]"
+      },
+      "properties": {
+        "name": "[variables('hostingPlanName')]"
+      }
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[variables('siteName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[variables('hostingPlanName')]"
+      },
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "sourcecontrols",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('siteName'))]"
+          ],
+          "properties": {
+            "RepoUrl": "[variables('repoURL')]",
+            "branch": "[variables('branch')]",
+            "IsManualIntegration": true
+          }
+        },
+        {
+            "name": "appsettings",
+            "type": "config",
+            "apiVersion": "2015-08-01",
+            "dependsOn": [
+                "[concat('Microsoft.Web/sites/', variables('siteName'))]"
+            ],
+            "tags": {
+                "displayName": "WebAppSettings"
+            },
+            "properties": {
+                "WEBSITE_NODE_DEFAULT_VERSION": "6.9.1",
+                "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
+            }
+       }
+      ]
+    }
+  ],
+  "outputs": {
+      "PublicIPInfo" : {
+          "type": "string",
+          "value": "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName')))]"
+      },
+      "NicInfo" : {
+          "type": "string",
+          "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nicName')))]"
+      }
+
+  }
+}
