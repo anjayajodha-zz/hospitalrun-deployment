@@ -16,27 +16,6 @@
                 "description": "Password for the Virtual Machine. Default value is 'Subscription#<subscription id>'"
             }
         },
-        "imagePublisher": {
-            "type": "string",
-            "defaultValue": "Canonical",
-            "metadata": {
-                "description": "Maps to the publisher in the Azure Stack Platform Image Repository manifest file Eg: Canonical, Suse, OpenLogic "
-            }
-        },
-        "imageOffer": {
-            "type": "string",
-            "defaultValue": "UbuntuServer",
-            "metadata": {
-                "description": "Maps to the Offer in the Azure Stack Platform Image Repository manifest file Eg: UbuntuServer, SlesServer, CentOS "
-            }
-        },
-        "imageSku": {
-            "type": "string",
-            "defaultValue": "14.04.3-LTS",
-            "metadata": {
-                "description": "Maps to the sku in the Azure Stack Platform Image Repository manifest file Eg: 12.SP1, 6.7 , 7.2"
-            }
-        },
         "sku": {
             "type": "string",
             "allowedValues": [
@@ -73,6 +52,9 @@
     },
     "variables": {
         "dnsNameForPublicIP": "[tolower(concat('dns', uniquestring(resourceGroup().id)))]",
+        "imagePublisher" : "Canonical",
+        "imageOffer" : "UbuntuServer",
+        "imageSku" : "14.04.3-LTS",
         "location": "[resourceGroup().location]",
         "OSDiskName": "osdisk",
         "nicName": "[tolower(concat('nic',uniquestring(resourceGroup().id)))]",
@@ -91,12 +73,12 @@
         "gitAssetLocation": "https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/",
         "gitScriptFileName": "couchdbdeploy.sh",
         "gitScriptFile": "[concat(variables('gitAssetLocation'),'/',variables('gitScriptFileName'))]",
-        "publicIPAddressName" : "couchdbpublic",
+        "publicIPAddressName" : "[concat('couchdbpublic',uniqueString(resourceGroup().id))]",
         "publicIPAddressType" : "Static",
-        "siteName" : "HospitalRunFrontEnd",
-        "hostingPlanName" : "HospitalRunFrontEndHostingPlan",
+        "siteName" : "[concat('hospitalRunFrontEnd',uniqueString(resourceGroup().id))]",
+        "hostingPlanName" : "[concat('hospitalRunHosting',uniqueString(resourceGroup().id))]",
         "branch": "master",
-        "repoURL": "https://github.com/anjayajodha/hospitalrun-frontend.git"
+        "repoURL": "https://github.com/anjayajodha/hospitalrun-server.git"
     },
     "resources": [
         {
@@ -229,9 +211,9 @@
                 },
                 "storageProfile": {
                     "imageReference": {
-                        "publisher": "[parameters('imagePublisher')]",
-                        "offer": "[parameters('imageOffer')]",
-                        "sku": "[parameters('imageSku')]",
+                        "publisher": "[variables('imagePublisher')]",
+                        "offer": "[variables('imageOffer')]",
+                        "sku": "[variables('imageSku')]",
                         "version": "latest"
                     },
                     "osDisk": {
@@ -320,19 +302,19 @@
           }
         },
         {
-        "name": "appsettings",
-        "type": "config",
-        "apiVersion": "2015-08-01",
-        "dependsOn": [
-            "[concat('Microsoft.Web/sites/', variables('siteName'))]"
-        ],
-        "tags": {
-            "displayName": "WebAppSettings"
-        },
-        "properties": {
-            "WEBSITE_NODE_DEFAULT_VERSION": "6.9.1",
-            "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).dnsSettings.domainNameLabel]"
-        }
+            "name": "appsettings",
+            "type": "config",
+            "apiVersion": "2015-08-01",
+            "dependsOn": [
+                "[concat('Microsoft.Web/sites/', variables('siteName'))]"
+            ],
+            "tags": {
+                "displayName": "WebAppSettings"
+            },
+            "properties": {
+                "WEBSITE_NODE_DEFAULT_VERSION": "6.9.1",
+                "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
+            }
        }
       ]
     }
