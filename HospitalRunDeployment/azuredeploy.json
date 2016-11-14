@@ -72,7 +72,7 @@
         "networkSecurityGroupName": "[tolower(concat('nsg',uniquestring(resourceGroup().id)))]",
         "gitAssetLocation": "https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/",
         "gitScriptFileName": "couchdbdeploy.sh",
-        "gitScriptFile": "[concat(variables('gitAssetLocation'),'/',variables('gitScriptFileName'))]",
+        "gitScriptFile": "[concat(variables('gitAssetLocation'),variables('gitScriptFileName'))]",
         "publicIPAddressName" : "[concat('couchdbpublic',uniqueString(resourceGroup().id))]",
         "publicIPAddressType" : "Static",
         "siteName" : "[concat('hospitalRunFrontEnd',uniqueString(resourceGroup().id))]",
