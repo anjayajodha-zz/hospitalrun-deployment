@@ -23,6 +23,8 @@ if [ -z "${1}" ] || [ -z "${2}" ]; then
 else
     SECUREHOST="http://$1:$2@$URL:$PORT"
 fi
+
+sleep 10
 curl -X PUT $SECUREHOST/_users/_security -d '{ "admins": { "names": [], "roles": ["admin"]}, "members": { "names": [], "roles": []}}'
 curl -X PUT $SECUREHOST/config
 curl -X PUT $SECUREHOST/config/_security -d '{ "admins": { "names": [], "roles": ["admin"]}, "members": { "names": [], "roles": []}}'
