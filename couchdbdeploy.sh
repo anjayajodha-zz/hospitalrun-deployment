@@ -6,8 +6,11 @@ apt-get -qq install -y couchdb
 
 
 curl -L https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/local.ini -o /etc/couchdb/local.ini
+
+sleep 5
 service couchdb restart
 
+sleep 10
 
 
 URL="localhost"
