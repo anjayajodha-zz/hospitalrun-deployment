@@ -25,13 +25,13 @@
   <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
   <!-- vertag<:>end -->
   <ItemGroup>
-    <Content Include="azuredeploy.brazil.json" />
-    <Content Include="azuredeploy.germany.json" />
-    <Content Include="azuredeploy.russia.json" />
-    <Content Include="azuredeploy.southafrica.json" />
-    <Content Include="azuredeploy.australia.json" />
-    <Content Include="azuredeploy.newzealand.json" />
-    <Content Include="azuredeploy.global.json" />
+    <Content Include="parameters.brazil.json" />
+    <Content Include="parameters.germany.json" />
+    <Content Include="parameters.russia.json" />
+    <Content Include="parameters.southafrica.json" />
+    <Content Include="parameters.australia.json" />
+    <Content Include="parameters.newzealand.json" />
+    <Content Include="parameters.global.json" />
     <Content Include="azuredeploy.json" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
