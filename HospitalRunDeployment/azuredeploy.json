@@ -30,7 +30,10 @@
                 "P1",
                 "P2",
                 "P3",
-                "P4"
+                "P4",
+              "Shared",
+              "Standard",
+              "Free"
             ],
             "defaultValue": "S1",
             "metadata": {
@@ -43,43 +46,43 @@
                 "0",
                 "1",
                 "2"
-            ],
+            ],  
             "defaultValue": "0",
             "metadata": {
                 "description": "The instance size of the hosting plan (small, medium, or large)."
             }
         }
     },
-    "variables": {
-        "dnsNameForPublicIP": "[tolower(concat('dns', uniquestring(resourceGroup().id)))]",
-        "imagePublisher" : "Canonical",
-        "imageOffer" : "UbuntuServer",
-        "imageSku" : "14.04.3-LTS",
-        "location": "[resourceGroup().location]",
-        "OSDiskName": "osdisk",
-        "nicName": "[tolower(concat('nic',uniquestring(resourceGroup().id)))]",
-        "addressPrefix": "10.0.0.0/24",
-        "subnetName": "[tolower(concat('subnet',uniquestring(resourceGroup().id)))]",
-        "subnetPrefix": "10.0.0.0/24",
-        "storageAccountName": "[concat('sa', uniquestring(resourceGroup().id))]",
-        "storageAccountType": "Standard_LRS",
-        "vmStorageAccountContainerName": "vhds",
-        "vmName": "[substring(concat('simplelinuxvm',resourceGroup().Name),0,14)]",
-        "vmSize": "Standard_A2",
-        "virtualNetworkName": "[tolower(concat('vnet',uniquestring(resourceGroup().id)))]",
-        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
-        "networkSecurityGroupName": "[tolower(concat('nsg',uniquestring(resourceGroup().id)))]",
-        "gitAssetLocation": "https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/",
-        "gitScriptFileName": "couchdbdeploy.sh",
-        "gitScriptFile": "[concat(variables('gitAssetLocation'),variables('gitScriptFileName'))]",
-        "publicIPAddressName" : "[concat('couchdbpublic',uniqueString(resourceGroup().id))]",
-        "publicIPAddressType" : "Static",
-        "siteName" : "[concat('hospitalRunFrontEnd',uniqueString(resourceGroup().id))]",
-        "hostingPlanName" : "[concat('hospitalRunHosting',uniqueString(resourceGroup().id))]",
-        "branch": "master",
-        "repoURL": "https://github.com/anjayajodha/hospitalrun-server.git"
-    },
+  "variables": {
+    "dnsNameForPublicIP": "[tolower(concat('dns', uniquestring(resourceGroup().id)))]",
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "imageSku": "14.04.3-LTS",
+    "location": "[resourceGroup().location]",
+    "OSDiskName": "osdisk",
+    "nicName": "[tolower(concat('nic','hospitalapp1'))]",
+    "addressPrefix": "10.0.0.0/24",
+    "subnetName": "[tolower(concat('subnet','hospitalapp1'))]",
+    "subnetPrefix": "10.0.0.0/24",
+    "storageAccountName": "[concat('sa', 'hospitalapp1')]",
+    "storageAccountType": "Standard_LRS",
+    "vmStorageAccountContainerName": "vhds",
+    "vmName": "[concat('couchdb','hospitalapp1')]",
+    "vmSize": "Standard_A2",
+    "virtualNetworkName": "[tolower(concat('vnet','hospitalapp1'))]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+    "networkSecurityGroupName": "[tolower(concat('nsg','hospitalapp1'))]",
+    "gitAssetLocation": "https://raw.githubusercontent.com/anjayajodha/hospitalrun-deployment/master/",
+    "gitScriptFileName": "couchdbdeploy.sh",
+    "gitScriptFile": "[concat(variables('gitAssetLocation'),variables('gitScriptFileName'))]",
+    "publicIPAddressName": "[concat('couchdbpublic','hospitalapp1')]",
+    "publicIPAddressType": "Static",
+    "siteName": "hospitalAppFrontEnd",
+    "hostingPlanName": "hospitalAppHostingPlan",
+    "branch": "master",
+    "repoURL": "https://github.com/anjayajodha/hospitalrun-server.git"
+  },
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
@@ -261,7 +264,7 @@
 
     },
     {
-      "apiVersion": "2015-08-01",
+      "apiVersion": "2014-06-01",
       "name": "[variables('hostingPlanName')]",
       "type": "Microsoft.Web/serverfarms",
       "location": "[resourceGroup().location]",
@@ -277,19 +280,19 @@
       }
     },
     {
-      "apiVersion": "2015-08-01",
+      "apiVersion": "2014-06-01",
       "name": "[variables('siteName')]",
       "type": "Microsoft.Web/sites",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+        "[concat('Microsoft.Web/serverfarms/', variables('hostingPlanName'))]"
       ],
       "properties": {
-        "serverFarmId": "[variables('hostingPlanName')]"
+        "serverFarm": "[variables('hostingPlanName')]"
       },
       "resources": [
         {
-          "apiVersion": "2015-08-01",
+          "apiVersion": "2014-06-01",
           "name": "web",
           "type": "sourcecontrols",
           "dependsOn": [
@@ -312,7 +315,7 @@
                 "displayName": "WebAppSettings"
             },
             "properties": {
-                "WEBSITE_NODE_DEFAULT_VERSION": "6.9.1",
+                "WEBSITE_NODE_DEFAULT_VERSION": "6.3.0",
                 "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
             }
        }
