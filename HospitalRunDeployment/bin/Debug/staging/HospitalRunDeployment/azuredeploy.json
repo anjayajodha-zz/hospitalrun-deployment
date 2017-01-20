@@ -57,7 +57,7 @@
     "dnsNameForPublicIP": "[tolower(concat('dns', uniquestring(resourceGroup().id)))]",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
-    "imageSku": "14.04.3-LTS",
+    "imageSku": "14.04.5-LTS",
     "location": "[resourceGroup().location]",
     "OSDiskName": "osdisk",
     "nicName": "[tolower(concat('nic','hospitalapp'))]",
