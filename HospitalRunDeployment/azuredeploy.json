@@ -64,10 +64,10 @@
     "addressPrefix": "10.0.0.0/24",
     "subnetName": "[tolower(concat('subnet','hospitalapp'))]",
     "subnetPrefix": "10.0.0.0/24",
-    "storageAccountName": "[concat('storact', 'hospitalapp')]",
+    "storageAccountName": "[concat('storageact', 'hospitalapp')]",
     "storageAccountType": "Standard_LRS",
     "vmStorageAccountContainerName": "vhds",
-    "vmName": "[concat('couchdb','hospitalapp')]",
+    "vmName": "[concat('couchdbvm','hospitalapp')]",
     "vmSize": "Standard_A2",
     "virtualNetworkName": "[tolower(concat('vnet','hospitalapp'))]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
@@ -78,7 +78,7 @@
     "gitScriptFile": "[concat(variables('gitAssetLocation'),variables('gitScriptFileName'))]",
     "publicIPAddressName": "[concat('couchdbpublic','hospitalapp')]",
     "publicIPAddressType": "Static",
-    "siteName": "hospitalAppFrontEnd",
+    "siteName": "hospitalAppDeployment",
     "hostingPlanName": "hospitalAppHostingPlan",
     "branch": "master",
     "repoURL": "https://github.com/anjayajodha/hospitalrun-server.git"
@@ -292,6 +292,21 @@
       },
       "resources": [
         {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', variables('siteName'))]"
+          ],
+          "tags": {
+            "displayName": "WebAppSettings"
+          },
+          "properties": {
+            "WEBSITE_NODE_DEFAULT_VERSION": "6.3.0",
+            "COUCHDBHOSTNAME": "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
+          }
+        },
+        {
           "apiVersion": "2014-06-01",
           "name": "web",
           "type": "sourcecontrols",
@@ -303,22 +318,7 @@
             "branch": "[variables('branch')]",
             "IsManualIntegration": true
           }
-        },
-        {
-            "name": "appsettings",
-            "type": "config",
-            "apiVersion": "2015-08-01",
-            "dependsOn": [
-                "[concat('Microsoft.Web/sites/', variables('siteName'))]"
-            ],
-            "tags": {
-                "displayName": "WebAppSettings"
-            },
-            "properties": {
-                "WEBSITE_NODE_DEFAULT_VERSION": "6.3.0",
-                "COUCHDBHOSTNAME" : "[reference(concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))).ipAddress]"
-            }
-       }
+        }
       ]
     }
   ]
